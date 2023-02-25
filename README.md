@@ -1,5 +1,7 @@
 # BlenderGIFRender
 
+[![Discord](https://img.shields.io/discord/1078878002873638952)](https://img.shields.io/discord/1078878002873638952)
+
 A blender addon to render straight to GIFs
 
 ---
