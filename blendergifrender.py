@@ -12,6 +12,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import sys
+from dataclasses import dataclass
+
 
 bl_info = {
     'name': 'BlenderGIFRender',
@@ -23,6 +26,11 @@ bl_info = {
     'wiki_url': 'https://github.com/tmorgan497/BlenderGIFRender/wiki',
     'category': '3D View',
 }
+
+
+@dataclass
+class AddonSettings:
+    GITHUB_URL = "https://github.com/tmorgan497/BlenderGIFRender"
 
 
 class BlenderGIFRender(bpy.types.Panel):
@@ -50,8 +58,45 @@ class BlenderGIFRenderPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
         layout.label(text="BlenderGIFRender Preferences")
-        layout.prop(self, "check_update")
-        # layout.operator("wm.url_open", text="BlenderGIFRender on Github").url = "https://github.com/tmorgan497/BlenderGIFRender"
+        # layout.prop(self, "check_update")
+        layout.operator("wm.url_open", text="BlenderGIFRender on Github").url = AddonSettings.GITHUB_URL
+        layout.operator("wm.url_open", text="BlenderGIFRender on Github").url = AddonSettings.GITHUB_URL
+
+
+def ensure_dependencies(packages):
+    """ `packages`: list of tuples (<import name>, <pip name>) """
+
+    if not packages:
+        return
+
+    import site
+    import importlib
+    import importlib.util
+
+    user_site_packages = site.getusersitepackages()
+    if user_site_packages not in sys.path:
+        sys.path.append(user_site_packages)
+
+    modules_to_install = [module[1] for module in packages if not importlib.util.find_spec(module[0])]
+    if not modules_to_install:
+        return
+
+    if bpy.app.version < (2, 91, 0):
+        python_binary = bpy.app.binary_path_python
+    else:
+        python_binary = sys.executable
+
+    import subprocess
+    subprocess.run([python_binary, '-m', 'ensurepip'], check=True)
+    # subprocess.run([python_binary, '-m', 'pip', 'install', *modules_to_install, '--user'], check=True)
+    subprocess.run([python_binary, '-m', 'pip', 'install', *modules_to_install], check=True)
+
+    importlib.invalidate_caches()
+
+
+ensure_dependencies([
+    ('PIL', 'Pillow')
+])
 
 
 def register():
@@ -66,4 +111,3 @@ def unregister():
 
 if __name__ == "__main__":
     bpy.utils.register_class(BlenderGIFRender)
-    print('hi')
