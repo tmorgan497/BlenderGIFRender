@@ -2,6 +2,7 @@
 
 A blender addon to render straight to GIFs
 
+
 ---
 
 ## If this project interests you, consider buying me a beer 🍻
