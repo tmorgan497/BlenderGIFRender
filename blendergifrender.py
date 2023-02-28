@@ -33,6 +33,14 @@ class AddonSettings:
     GITHUB_URL = "https://github.com/tmorgan497/BlenderGIFRender"
 
 
+class NPanelProps(bpy.types.PropertyGroup):
+    my_bool: bpy.props.BoolProperty(
+        name="a bool",
+        description="A bool property",
+        default=True,
+    )
+
+
 class BlenderGIFRender(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_blendergifrender"
     bl_label = "BlenderGIFRender"
@@ -40,8 +48,14 @@ class BlenderGIFRender(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "GIF"
 
+    mybool: bpy.props.BoolProperty(
+        name="a bool",
+        description="A bool property",
+        default=True,
+    )
+
     def draw(self, context):
-        scene = bpy.context.scene
+        scene = context.scene
         rd = scene.render
         self.layout.label(text=f"Render File Format: {str(rd.image_settings.file_format)}")
         self.layout.label(text=f"Render File Path: {str(rd.filepath)}")
@@ -56,11 +70,9 @@ class BlenderGIFRenderPreferences(bpy.types.AddonPreferences):
     )
 
     def draw(self, context):
-        layout = self.layout
-        layout.label(text="BlenderGIFRender Preferences")
-        # layout.prop(self, "check_update")
-        layout.operator("wm.url_open", text="BlenderGIFRender on Github").url = AddonSettings.GITHUB_URL
-        layout.operator("wm.url_open", text="BlenderGIFRender on Github").url = AddonSettings.GITHUB_URL
+        self.layout.label(text="BlenderGIFRender Preferences")
+        # self.layout.prop(self, "check_update")
+        self.layout.operator("wm.url_open", text="BlenderGIFRender on Github").url = AddonSettings.GITHUB_URL
 
 
 def ensure_dependencies(packages):
@@ -110,4 +122,5 @@ def unregister():
 
 
 if __name__ == "__main__":
-    bpy.utils.register_class(BlenderGIFRender)
+    # bpy.utils.register_class(BlenderGIFRender)
+    register()
