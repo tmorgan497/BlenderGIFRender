@@ -13,6 +13,9 @@
 
 import bpy
 import sys
+import glob
+from pathlib import Path
+from PIL import Image
 from dataclasses import dataclass
 
 
@@ -33,14 +36,6 @@ class AddonSettings:
     GITHUB_URL = "https://github.com/tmorgan497/BlenderGIFRender"
 
 
-class NPanelProps(bpy.types.PropertyGroup):
-    my_bool: bpy.props.BoolProperty(
-        name="a bool",
-        description="A bool property",
-        default=True,
-    )
-
-
 class BlenderGIFRender(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_blendergifrender"
     bl_label = "BlenderGIFRender"
@@ -48,17 +43,75 @@ class BlenderGIFRender(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "GIF"
 
-    mybool: bpy.props.BoolProperty(
+    def render_file_format(self, context):
+        scene = context.scene
+        rd = scene.render
+        return rd.image_settings.file_format
+
+    bpy.types.Scene.render_file_format = render_file_format
+
+    bpy.types.Scene.my_bool = bpy.props.BoolProperty(
         name="a bool",
         description="A bool property",
         default=True,
+    )
+    bpy.types.Scene.my_enum = bpy.props.EnumProperty(
+        name="an enum",
+        description="An enum property",
+        items=[
+            ("OPT_A", "First Option", "Description one"),
+            ("OPT_B", "Second Option", "Description two"),
+            ("OPT_C", "Third Option", "Description three"),
+        ],
+        default="OPT_A",
     )
 
     def draw(self, context):
         scene = context.scene
         rd = scene.render
         self.layout.label(text=f"Render File Format: {str(rd.image_settings.file_format)}")
-        self.layout.label(text=f"Render File Path: {str(rd.filepath)}")
+        # self.layout.label(text=f"Render File Path: {str(rd.filepath)}")  # , icon='ERROR')
+        self.layout.prop(scene, "render_file_format", text="text")
+        # row = self.layout.row()
+        # row.prop(scene, "my_enum", text="text", expand=True)
+        # row.prop(scene, "my_bool", text="text", expand=True)
+        self.layout.operator("wm.gif_render", text="Render", icon='RENDER_ANIMATION')
+
+
+class GIFRenderOperator(bpy.types.Operator):
+    bl_idname = "wm.gif_render"
+    bl_label = "Render to GIF"
+
+    def execute(self, context):
+        scene = context.scene
+        rd = scene.render
+        # self.report({'INFO'}, "Render started")
+        file_format = rd.image_settings.file_format
+        render_file_path = rd.filepath
+
+        if file_format != 'PNG':
+            self.report({'ERROR'}, "Render file format must be PNG")
+            show_message("Render file format must be PNG", "Error", 'ERROR')
+            return {'CANCELLED'}
+
+        print('Render start')
+        bpy.ops.render.render(animation=True)
+
+        images = []
+        for file in glob.glob(render_file_path + "*.png"):
+            file = Path(file)
+            frame = Image.open(file)
+            images.append(frame)
+        images[0].save(render_file_path + "/output.gif",
+                       save_all=True,
+                       append_images=images[1:],
+                       optimize=False,
+                       duration=42,
+                       loop=0,
+                       )
+
+        print("Render end")
+        return {'FINISHED'}
 
 
 class BlenderGIFRenderPreferences(bpy.types.AddonPreferences):
@@ -73,6 +126,13 @@ class BlenderGIFRenderPreferences(bpy.types.AddonPreferences):
         self.layout.label(text="BlenderGIFRender Preferences")
         # self.layout.prop(self, "check_update")
         self.layout.operator("wm.url_open", text="BlenderGIFRender on Github").url = AddonSettings.GITHUB_URL
+
+
+def show_message(message="", title="Message Box", icon='INFO'):
+    def draw(self, context):
+        self.layout.label(text=message)
+
+    bpy.context.window_manager.popup_menu(draw, title=title, icon=icon)
 
 
 def ensure_dependencies(packages):
@@ -112,13 +172,18 @@ ensure_dependencies([
 
 
 def register():
+    bpy.utils.register_class(GIFRenderOperator)
     bpy.utils.register_class(BlenderGIFRender)
     bpy.utils.register_class(BlenderGIFRenderPreferences)
 
 
 def unregister():
+    bpy.utils.unregister_class(GIFRenderOperator)
     bpy.utils.unregister_class(BlenderGIFRender)
     bpy.utils.unregister_class(BlenderGIFRenderPreferences)
+    del bpy.types.Scene.my_bool
+    del bpy.types.Scene.my_enum
+    del bpy.types.Scene.render_file_format
 
 
 if __name__ == "__main__":
